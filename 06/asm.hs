@@ -1,10 +1,11 @@
 import System.Environment(getArgs)
+import Data.Char(isSpace)
 
 translate :: [String] -> [String]
 translate [] = []
-translate (l:lines) = case l of
-	('/':'/':xs) -> translate lines
-	otherwise -> l:translate lines
+translate (l:ls) = case filter (not.isSpace) l of
+	('/':'/':xs) -> translate ls
+	xs -> xs:translate ls
 
 main = do
 	fileName <- fmap head getArgs
