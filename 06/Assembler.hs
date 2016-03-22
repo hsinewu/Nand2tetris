@@ -6,7 +6,7 @@ import Numeric(showIntAtBase)
 import Decode
 
 --translate A instruction
-instruction ('@':xs) = '0':bin15 (read xs::Int)
+instruction ('@':xs) = '0' : bin15 (read xs::Int)
 --translate C instruction
 instruction xs = "111" ++ comp ++ dest ++ jump where
 	hasDest = elem '=' xs
