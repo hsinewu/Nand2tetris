@@ -2,6 +2,7 @@ module Main where
 
 import System.Environment(getArgs)
 import Data.Char(isSpace)
+import Data.List(isPrefixOf)
 import Numeric(showIntAtBase)
 import Decode
 
@@ -19,14 +20,19 @@ instruction xs = "111" ++ comp ++ dest ++ jump where
 	jump = decodeJump jumpCode where
 		jumpCode = if hasJump then tail (dropWhile (/= ';') xs) else ""
 
-translate :: [String] -> [String]
-translate [] = []
-translate (l:ls) = case filter (not.isSpace) l of
-	"" -> translate ls
-	('/':'/':xs) -> translate ls
-	xs -> instruction xs:translate ls
+despace ls = map (trimLine) ls where
+	trimLine l = (reverse.(dropWhile isSpace).reverse.(dropWhile isSpace)) l
+
+decomment ls = filter (not.isPrefixOf "//") ls
+
+decode [] = []
+decode (l:ls) = case filter (not.isSpace) l of
+	"" -> decode ls
+	xs -> instruction xs:decode ls
 
 main = do
 	fileName <- fmap head getArgs
 	contents <- readFile fileName
-	putStrLn $ unlines (translate (lines contents))
+	putStrLn $ unlines (assembly (lines contents)) where
+		assembly :: [String] -> [String]
+		assembly = decode.decomment.despace
