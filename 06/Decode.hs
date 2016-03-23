@@ -1,9 +1,20 @@
 module Decode (
-	bin15,
-	decodeComp,
-	decodeDest,
-	decodeJump
+	decode
 ) where
+
+--decode A instruction
+decode ('@':xs) = '0' : bin15 (read xs::Int)
+--decode C instruction
+decode xs = "111" ++ comp ++ dest ++ jump where
+	hasDest = elem '=' xs
+	hasJump = elem ';' xs
+	comp = decodeComp compCode where
+		compCode = takeWhile (/= ';') skipDest
+		skipDest = if hasDest then tail (dropWhile (/= '=') xs) else xs
+	dest = decodeDest destCode where
+		destCode = if hasDest then takeWhile (/= '=') xs else ""
+	jump = decodeJump jumpCode where
+		jumpCode = if hasJump then tail (dropWhile (/= ';') xs) else ""
 
 bin :: Int -> String
 bin 0 = "0"
