@@ -15,7 +15,6 @@ decodes ls = map decode ls
 
 main = do
 	fileName <- fmap head getArgs
-	contents <- readFile fileName
-	putStrLn $ unlines (assembly (lines contents)) where
+	fmap (unlines.assembly.lines) (readFile fileName) >>= putStrLn where
 		assembly :: [String] -> [String]
 		assembly = decodes.decomments.despaces
