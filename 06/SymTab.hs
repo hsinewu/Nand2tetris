@@ -20,20 +20,20 @@ hackBuiltInSymbol = M.fromList
 --on seeing label
 --    overwrite to table
 
--- varibles defined to be start from 16
-buildSymTab ls = _buildSymTab ls 0 16 hackBuiltInSymbol where
-    _buildSymTab [] _ _ symtab = symtab
-    _buildSymTab (l:ll) lineCount varCount symtab = case l of
+buildSymTab ls = _buildSymTab ls 0 [] hackBuiltInSymbol where
+    _buildSymTab [] _ varList symtab = combinedTab where
+        varTab = M.fromList $ zip (reverse varList) [16..]
+        combinedTab = M.union symtab varTab
+    _buildSymTab (l:ll) lineCount varList symtab = case l of
         --it's a new label
-        '(':xs ->  _buildSymTab ll lineCount varCount insertedTab where
+        '(':xs ->  _buildSymTab ll lineCount newVarList newTab where
             label = init xs -- take out ')'
-            insertedTab = M.insert label lineCount symtab
+            newTab = M.insert label lineCount symtab
+            newVarList = filter (/=label) varList
         --might be a new variable
-        '@':xs -> if isVariable && notInTable then insertedTab else moreSymTab where
-            isVariable = isAlpha (head xs)
-            notInTable = isNothing (M.lookup xs symtab)
-            insertedTab = _buildSymTab ll (lineCount+1) (varCount+1) (M.insert xs varCount symtab)
-            moreSymTab = _buildSymTab ll (lineCount+1) (varCount) symtab
-        otherwise -> _buildSymTab ll (lineCount+1) varCount symtab
-
-main = putStrLn "sym"
+        '@':var -> if isVariable && isNew then insertBuild else skipBuild where
+            isVariable = isAlpha (head var)
+            isNew = notElem var varList && isNothing (M.lookup var symtab)
+            insertBuild = _buildSymTab ll (lineCount+1) (var:varList) symtab
+            skipBuild = _buildSymTab ll (lineCount+1) varList symtab
+        otherwise -> _buildSymTab ll (lineCount+1) varList symtab
