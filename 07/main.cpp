@@ -20,6 +20,7 @@ void process_file(string file_name) {
     int num = 0;
 
     while( getline(vm_file, line)) {
+        line.erase( line.find_last_not_of("\t\r") + 1 );
         if( line == "" || line.substr(0,2) == "//") continue;
         cerr << ++num << ": " << line << endl;
         asm_file << parse_line( line) << endl;
