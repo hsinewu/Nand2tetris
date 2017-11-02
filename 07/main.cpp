@@ -3,19 +3,20 @@
 #include "vm.cpp"
 using namespace std;
 
-string set_extension(string file_name) {
+string G_FILE_BASENAME;
 
-    size_t index = file_name.find_last_of(".");
-    if( index!= -1)
-        file_name = file_name.substr(0, index);
-    return file_name + ".asm";
-}
+void process_file(const string file_name) {
 
-void process_file(string file_name) {
+    // remove extension
+    size_t dot = file_name.find_last_of(".");
+    const string no_ext = file_name.substr(0, dot);
 
-    string output_name = set_extension( file_name);
+    // remove path
+    size_t slash = no_ext.find_last_of("/");
+    G_FILE_BASENAME = no_ext.substr( slash+1);
+
     ifstream vm_file( file_name);
-    ofstream asm_file( output_name);
+    ofstream asm_file( no_ext + ".asm");
     string line;
     int num = 0;
 

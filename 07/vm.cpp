@@ -4,6 +4,7 @@
 using namespace std;
 
 static int uniq_num = 0;
+extern string G_FILE_BASENAME;
 
 // D = val
 string load_constant(string val) {
@@ -24,6 +25,14 @@ string load_address(string seg, string val) {
 	// TEMP is defined as @5 ~ @12
 	if( seg == "temp")
 		return load_constant( to_string( 5 + stoi(val)));
+
+	// pointer 0/1 = THIS/THAT
+	if( seg == "pointer")
+		return load_constant( to_string( 3 + stoi(val)));
+
+	// static i = @Foo.i where Foo is the name of vm file
+	if( seg == "static")
+		return load_constant(val) + "@" + G_FILE_BASENAME + "." + val + "\nD=M+D\n";
 
 	if( shorthand.count(seg) == 0 )
 		throw runtime_error( "Bad seg name: " + seg );
