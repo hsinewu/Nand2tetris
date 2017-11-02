@@ -3,17 +3,54 @@
 #include <stdexcept>
 using namespace std;
 
-using F = string (*)(string);
+// using F = string (*)(string);
 static int uniq_num = 0;
 
+// D = val
 string load_constant(string val) {
 
 	return "@" + val + "\nD=A\n";
 }
 
+// string load_argument(string val) {
+
+// 	return load_constant(val) + "@ARG\nA=M+D\nD=M\n";
+// }
+
+// D = PTR
+string load_address(string seg, string val) {
+
+	const map< string, string> shorthand = {
+		// {"constant", } You can't pop constant
+		{"local", "@LCL\n"},
+		{"argument", "@ARG\n"},
+		// {"temp", "@5\n"},	
+		{"this", "@THIS\n"},
+		{"that", "@THAT\n"}
+	};
+	if( seg == "constant")
+		return load_constant(val);
+	// TEMP is defined as @5 ~ @12
+	if( seg == "temp")
+		return load_constant( to_string( 5 + stoi(val)));
+	if( shorthand.count(seg) == 0 )
+		throw runtime_error( "Bad seg name: " + seg );
+	return load_constant(val) + shorthand.at(seg) + "D=M+D\n";  // can be optimize when val = 0
+}
+
+// string load_temp(string val) {
+
+// 	return "";
+// }
+
 string inc_stack() {
 
 	return "@SP\nM=M+1\n";
+}
+
+string dec_stack() {
+
+	return "@SP\nM=M-1\n";
 }
 
 string write_stack() {
@@ -21,12 +58,40 @@ string write_stack() {
 	return "@SP\nA=M\nM=D\n";
 }
 
+// check push pointer
 string command_push(string seg, string val) {
 
-	static map< string, F> funcs = {
-		{"constant", load_constant}
-	};
-	return funcs[seg](val) + write_stack() + inc_stack();
+	// LCL, ARG, THIS, THAT
+	// static map< string, F> funcs = {
+	// 	{"constant", load_constant},
+	// 	{"local", load_constant},
+	// 	{"argument", load_argument},
+	// 	{"temp", load_temp},
+	// 	{"this", load_temp},
+	// 	{"that", load_temp}
+	// };
+	if( seg == "constant")
+		return load_constant(val) + write_stack() + inc_stack();
+	return load_address( seg, val) + "A=D\nD=M\n" /*+ funcs[seg](val)*/ + write_stack() + inc_stack();
+}
+
+string command_pop(string seg, string val) {
+
+	// const map<string, string> shorthand = {
+	// 	// {"constant", } You can't pop constant
+	// 	{"local", "@LCL\n"},
+	// 	{"argument", "@ARG\n"},
+	// 	{"temp", "@5\n"},
+	// 	{"this", "@THIS\n"},
+	// 	{"that", "@THAT\n"}
+	// };
+	// if( shorthand.count(seg)==0 )
+	// 	throw runtime_error("Bad seg name: " + seg );
+	// const string load_address = load_constant(val) + shorthand.at(seg) + "D=M+D\n";  // can be optimize when val = 0
+	const string load_stack = dec_stack() + "A=M\n" "A=M\n";
+	const string swap_AD = "D=D+A\nA=D-A\nD=D-A\n";
+	const string write_back = "M=D\n";
+	return load_address( seg, val) + load_stack + swap_AD + write_back;
 }
 
 // Arithmetics
@@ -100,6 +165,8 @@ string parse_line(string line) {
 	tokens >> cmd >> seg >> val;
 	if( cmd == "push")
 		return command_push(seg, val);
+	if( cmd == "pop")
+		return command_pop(seg, val);
 	if( cmd == "add")
 		return command_add();
 	if( cmd == "sub")
