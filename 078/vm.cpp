@@ -144,32 +144,62 @@ string command_not() {
 	return set_op + "M=!M\n";
 }
 
+// Jump
+string command_label(string label) {
+
+	return "(" + label + ")\n";
+}
+
+string command_goto(string label) {
+
+	return "@" + label + "\n0;JMP\n";
+}
+
+string command_if_goto(string label) {
+
+	return
+	"@SP\nM=M-1\nA=M\nD=M\n"
+	"@" + label + "\n"
+	"D;JNE\n";
+}
+
 string parse_line(string line) {
 
 	stringstream tokens( line);
-	string cmd, seg, val;
-	tokens >> cmd >> seg >> val;
+	string cmd, a, b;
+	tokens >> cmd >> a >> b;
 	if( cmd == "push")
-		return command_push(seg, val);
+		return command_push(a, b);
 	if( cmd == "pop")
-		return command_pop(seg, val);
+		return command_pop(a, b);
+
 	if( cmd == "add")
 		return command_add();
 	if( cmd == "sub")
 		return command_sub();
 	if( cmd == "neg")
 		return command_neg();
+
 	if( cmd == "eq")
 		return command_eq();
 	if( cmd == "gt")
 		return command_gt();
 	if( cmd == "lt")
 		return command_lt();
+
 	if( cmd == "and")
 		return command_and();
 	if( cmd == "or")
 		return command_or();
 	if( cmd == "not")
 		return command_not();
+
+	if( cmd == "label")
+		return command_label(a);
+	if( cmd == "goto")
+		return command_goto(a);
+	if( cmd == "if-goto")
+		return command_if_goto(a);
+
 	throw runtime_error("Unknown command [" + cmd + "]");
 }
