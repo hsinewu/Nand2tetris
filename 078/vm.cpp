@@ -163,11 +163,86 @@ string command_if_goto(string label) {
 	"D;JNE\n";
 }
 
+// Function
+string command_function(string name, string nvars) {
+
+	// This makes code grows n times
+	// Better use jump?
+	string pad_local = "@SP\nM=M+1\nA=M-1\nM=0\n";
+	string pad_locals = "";
+	for( int n = stoi(nvars); n>0; n--)
+		pad_locals += pad_local;
+
+	return
+	// label this function address
+	command_label(name) + 
+
+	// store return address
+	// IP ???
+
+	// store pointers
+	// *sp++ = ptr for ptr in [LCL, ARG, THIS, THAT]
+	//  "@LCL\nD=M\n" + write_stack() + inc_stack() +
+	//  "@ARG\nD=M\n" + write_stack() + inc_stack() +
+	// "@THIS\nD=M\n" + write_stack() + inc_stack() +
+	// "@THAT\nD=M\n" + write_stack() + inc_stack() +
+	
+	// set local arg
+	// lcl = sp
+	// "@SP\nD=M\n" "@LCL\nM=D\n"
+
+	// reserve n vars
+	// zero initialize
+	pad_locals 
+
+	// course says push 0, but why?
+	// "@SP\nM=M+1\nA=M-1\nM=0\n"
+	;
+}
+
+string command_call(string name, string nargs) {
+
+	return "";
+}
+
+string command_return() {
+
+	return
+	// record where SP should be afterwards
+	// tmp = arg+1
+	"@ARG\nD=M+1\n@VM_SP\nM=D\n"
+
+	// write return value
+	// *arg = *sp
+	// Is this safe when no return value/arg?
+	"@SP\nA=M-1\nD=M\n" "@ARG\nA=M\nM=D\n"
+
+	// pop locals
+	// sp = lcl
+	"@LCL\nD=M\n" "@SP\nM=D\n"
+
+	// restore pointers
+	// *--sp = ptr for ptr in [THAT, THIS, ARG, LCL]
+	"@SP\nM=M-1\nA=M\nD=M\n" "@THAT\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n" "@THIS\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n"  "@ARG\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n"  "@LCL\nM=D\n"
+
+	// restore sp
+	// sp = tmp
+	"@VM_SP\nD=M\n@SP\nM=D\n"
+
+	// return address
+
+	;
+}
+
 string parse_line(string line) {
 
 	stringstream tokens( line);
 	string cmd, a, b;
 	tokens >> cmd >> a >> b;
+
 	if( cmd == "push")
 		return command_push(a, b);
 	if( cmd == "pop")
@@ -200,6 +275,13 @@ string parse_line(string line) {
 		return command_goto(a);
 	if( cmd == "if-goto")
 		return command_if_goto(a);
+
+	if( cmd == "function")
+		return command_function(a, b);
+	if( cmd == "call")
+		return command_call(a, b);
+	if( cmd == "return")
+		return command_return();
 
 	throw runtime_error("Unknown command [" + cmd + "]");
 }
