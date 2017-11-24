@@ -88,14 +88,16 @@ const string command_sub = set_ops + "M=M-D\n";
 const string command_neg = set_op + "M=-M\n";
 
 // Comparision
-string uniq_label() {
+string uniq_name() {
+
 	static int uniq_num;
-	return "VM_" + to_string( ++uniq_num);
+
+	return "VM_" + G_FILE_BASENAME + to_string( ++uniq_num);
 }
 
 string test(string jump) {
 
-	const string label = uniq_label();
+	const string label = uniq_name();
 	const string set_bits = "D=M\nM=-1\n";
 	const string jump_exit_if = "@" + label + "\nD;" + jump + "\n";
 	const string unset_bits = "@SP\nA=M-1\nM=0\n";
@@ -122,7 +124,7 @@ string command_lt() {
 // Bit-wise
 const string command_and = set_ops + "M=M&D\n";
 const string command_or  = set_ops + "M=M|D\n";
-const string command_not = set_op + "M=!M\n";
+const string command_not = set_op  + "M=!M\n" ;
 
 // Jump
 string command_label(string label) {
@@ -157,15 +159,45 @@ string command_function(string name, string nvars) {
 	// label this function address
 	command_label(name) + 
 
-	// reserve n vars
-	// zero initialize
-	pad_locals 
+	// reserve zero initialized vars * n 
+	pad_locals
+
+	// course says push 0, but why?
+	// + "@SP\nM=M+1\nA=M-1\nM=0\n"
 	;
 }
 
 string command_call(string name, string nargs) {
 
-	return "";
+	const string label = uniq_name();
+
+	return
+	// memorize new arg where arg = sp - nargs\n
+	load_addr(nargs) + "@SP\nD=M-D\n" "@VM_ARG\nM=D\n" +
+
+	// push return address\n
+	load_addr(label) + push_stack() +
+
+	// push pointers\n
+	// *sp++ = ptr for ptr in [LCL, ARG, THIS, THAT]
+	 "@LCL\nD=M\n" + push_stack() +
+	 "@ARG\nD=M\n" + push_stack() +
+	"@THIS\nD=M\n" + push_stack() +
+	"@THAT\nD=M\n" + push_stack() +
+	
+	// set new arg, lcl\n
+	// arg = sp - nargs - 5
+	load_memory("VM_ARG") + "@ARG\nM=D\n" +
+
+	// lcl = sp
+	"@SP\nD=M\n" "@LCL\nM=D\n" +
+
+	// transfer control\n
+	command_goto(name) +
+
+	// mark return address
+	command_label(label)
+	;
 }
 
 string command_return() {
@@ -178,26 +210,46 @@ string command_return() {
 	// write return value
 	// *arg = *sp
 	// Is this safe when no return value/arg?
-	"@SP\nA=M-1\nD=M\n" "@ARG\nA=M\nM=D\n"
+	// "@SP\nA=M-1\nD=M\n" "@ARG\nA=M\nM=D\n"
+
+	// record return value
+	"@SP\nA=M-1\nD=M\n" "@VM_VAL\nM=D\n"
 
 	// pop locals
 	// sp = lcl
 	"@LCL\nD=M\n" "@SP\nM=D\n"
 
-	// restore pointers
+	// pop pointers
 	// *--sp = ptr for ptr in [THAT, THIS, ARG, LCL]
-	"@SP\nM=M-1\nA=M\nD=M\n" "@THAT\nM=D\n"
-	"@SP\nM=M-1\nA=M\nD=M\n" "@THIS\nM=D\n"
-	"@SP\nM=M-1\nA=M\nD=M\n"  "@ARG\nM=D\n"
-	"@SP\nM=M-1\nA=M\nD=M\n"  "@LCL\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n" "M=0\n" "@THAT\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n" "M=0\n" "@THIS\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n" "M=0\n"  "@ARG\nM=D\n"
+	"@SP\nM=M-1\nA=M\nD=M\n" "M=0\n"  "@LCL\nM=D\n"
+
+	// pop return address
+	+ pop_stack() + "D=M\n" "M=0\n" "@VM_RET\nM=D\n"
 
 	// restore sp
 	// sp = tmp
-	"@VM_SP\nD=M\n@SP\nM=D\n"
+	"@VM_SP\nD=M\n@SP\nM=D\n" +
 
-	// return address
-
+	// write return value
+	load_memory("VM_VAL") + "@SP\nA=M-1\nM=D\n" +
+	// goto return address
+	"@VM_RET\nA=M\n0;JMP\n"
+	// command_goto("VM_RET")
 	;
+}
+
+string command_init() {
+
+	const string init_SP = "@256\nD=A\n@SP\nM=D\n";
+	const string thth = "@7513\nD=A\n@THIS\nM=D\n" "@7547\nD=A\n@THAT\nM=D\n";
+
+	// return init_SP + command_call("Sys.init", "0");
+	return init_SP + thth + command_call("Sys.init", "0");
+	// return init_SP + command_goto("Sys.init");
+	// return init_SP + thth + command_goto("Sys.init");
 }
 
 string parse_line(string line) {

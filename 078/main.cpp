@@ -20,10 +20,13 @@ void process_file(const string file_name) {
     string line;
     int num = 0;
 
+    // init code specified in course
+    asm_file << command_init() << endl;
     while( getline(vm_file, line)) {
         line.erase( line.find_last_not_of("\t\r") + 1 );
-        if( line == "" || line.substr(0,2) == "//") continue;
-        cerr << ++num << ": " << line << endl;
+        if( line == "" || line.substr(0,2) == "//")
+            continue;
+
         asm_file << parse_line( line) << endl;
     }
 }
