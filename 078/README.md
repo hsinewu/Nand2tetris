@@ -5,8 +5,7 @@ This is an implementation of vm translator that will translate vm code to hack a
 
 ### How to use it
 #### Compile
-Compile with `-std=c++11` flag, or just
-`$ make`
+Compile with `-std=c++11` flag, or just `$ make`
 
 #### Run
 `./translator [option] [input]`
@@ -15,8 +14,8 @@ option is `--noinit` which forbid auto generated init code, specified in the cou
 
 input is either a vm file or a directory contains vm files.
 
-example:
-`./translator myfile.vm` will output myfile.asm that contains hack assembly.
+example:  
+`./translator myfile.vm` will output myfile.asm that contains hack assembly.  
 `./translator mydir` TODO
 
 #### Test
